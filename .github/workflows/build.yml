@@ -23,13 +23,15 @@ jobs:
         sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev gzip tar curl git ccache zip unzip openjdk-17-jdk liblldb-dev
         pip install --upgrade pip setuptools buildozer cython
 
-    - name: Build with Buildozer
+    - name: Accept Android Licenses & Build
       run: |
         buildozer init
-        # Добавляем зависимости KivyMD и авто-принятие лицензий SDK
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,pillow/g' buildozer.spec
-        sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
-        sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+        
+        # Автоматическое принятие абсолютно всех лицензий Android SDK
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         
         buildozer -v android debug
 
