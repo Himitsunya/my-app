@@ -18,11 +18,14 @@ jobs:
       env:
         BUILDOZER_ALLOW_KIVY_USER_ROOT: 1
       run: |
-        # 1. Автоматически принимаем абсолютно все лицензии Google SDK
+        # 1. Автоматический запуск генерации готовых лицензий в целевую папку buildozer
         mkdir -p /github/home/.buildozer/android/platform/android-sdk/licenses
-        yes | android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/github/home/.buildozer/android/platform/android-sdk --licenses || true
+        
+        # Автоматическое принятие лицензий
+        yes | /home/user/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=/github/home/.buildozer/android/platform/android-sdk --licenses || true
+        yes | sdkmanager --licenses || true
 
-        # 2. Генерируем конфигурацию приложения
+        # 2. Чистая конфигурация buildozer.spec
         cat << 'EOF' > buildozer.spec
         [app]
         title = My App
@@ -40,7 +43,9 @@ jobs:
         log_level = 2
         warn_on_root = 0
 
+        # Жесткая фиксация параметров Android
         android.accept_sdk_license = True
+        android.ndk_version = 25b
         android.api = 33
         android.minapi = 24
         android.archs = arm64-v8a
