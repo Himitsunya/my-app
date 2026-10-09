@@ -31,15 +31,16 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # 1. Принятие ВСЕХ лицензий SDK и подготовка симлинков
+        # 1. Принятие лицензий и создание симлинков
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         mkdir -p $ANDROID_HOME/tools/bin
         ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
-        # 2. Предварительная установка стабильных build-tools и platform-tools
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33" "platform-tools" || true
+        # 2. Предварительное создание структуры buildozer и прокидывание лицензий
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        cp -r $ANDROID_HOME/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ || true
 
-        # 3. Чистая генерация buildozer.spec без сбоев
+        # 3. Чистый конфиг buildozer.spec
         cat << 'EOF' > buildozer.spec
         [app]
         title = My App
@@ -57,18 +58,15 @@ jobs:
         log_level = 2
         warn_on_root = 1
 
-        # Фиксированные параметры Android
+        # Настройки Android
         android.accept_sdk_license = True
-        android.sdk_path = /usr/local/lib/android/sdk
         android.ndk = 25b
-        android.build_tools_version = 33.0.2
         android.api = 33
         android.minapi = 24
         android.archs = arm64-v8a
-        android.skip_update = False
         EOF
 
-        # 4. Запуск компиляции
+        # 4. Запуск сборки
         buildozer -v android debug
 
     - name: Upload APK
@@ -76,4 +74,3 @@ jobs:
       with:
         name: app-release
         path: bin/*.apk
-        
