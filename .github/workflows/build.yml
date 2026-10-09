@@ -31,24 +31,28 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # 1. Лицензии и симлинк для sdkmanager
+        # 1. Подготовка лицензий и путей SDK
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         mkdir -p $ANDROID_HOME/tools/bin
         ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
-        # 2. Инициализация и настройка spec-файла
+        # 2. Инициализация и конфигурирование spec-файла
         buildozer init
-        sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,pillow/g' buildozer.spec
+        
+        # Настройка зависимостей: KivyMD подтянет все графические зависимости сам
+        sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd/g' buildozer.spec
+        
+        # Разрешения и пути SDK/NDK
         sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
         sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
         sed -i 's/#android.sdk_path =/android.sdk_path = \/usr\/local\/lib\/android\/sdk/g' buildozer.spec
-        
-        # 3. Фиксация стабильной версии NDK (r25b) и архитектуры arm64-v8a
         sed -i 's/#android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
+        
+        # Архитектура arm64-v8a
         sed -i 's/android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/g' buildozer.spec
         sed -i 's/#android.archs = arm64-v8a/android.archs = arm64-v8a/g' buildozer.spec
 
-        # 4. Запуск сборки
+        # 3. Компиляция приложения
         buildozer -v android debug
 
     - name: Upload APK
