@@ -31,20 +31,21 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # Принимаем все лицензии преднастроенного системного SDK
+        # 1. Принимаем все лицензии системного SDK
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        
-        # Устанавливаем стабильные build-tools
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-33"
 
+        # 2. Создаем структуру устаревших путей (симлинк), которую ищет Buildozer
+        mkdir -p $ANDROID_HOME/tools/bin
+        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
+
+        # 3. Инициализация и настройка buildozer.spec
         buildozer init
-        
-        # Конфигурируем buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,pillow/g' buildozer.spec
         sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
         sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
         sed -i 's/#android.sdk_path =/android.sdk_path = \/usr\/local\/lib\/android\/sdk/g' buildozer.spec
 
+        # 4. Запуск компиляции
         buildozer -v android debug
 
     - name: Upload APK
