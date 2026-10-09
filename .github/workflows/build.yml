@@ -23,16 +23,24 @@ jobs:
         sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev gzip tar curl git ccache zip unzip openjdk-17-jdk liblldb-dev
         pip install --upgrade pip setuptools buildozer cython
 
-    - name: Accept Android Licenses & Build
+    - name: Pre-accept SDK Licenses & Build
       run: |
         buildozer init
+        
+        # 1. Автоматически включаем нужные библиотеки и согласие в buildozer.spec
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,pillow/g' buildozer.spec
+        sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+        sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+
+        # 2. Создаем папки для лицензий прямо перед компиляцией
+        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        mkdir -p $ANDROID_HOME/licenses
         
-        # Автоматическое принятие абсолютно всех лицензий Android SDK
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        
+        # 3. Записываем официальные хэши принятых лицензий Google
+        echo -e "\n89373736705d1fc32a77a70400f280053f292d40\nd56f5187479451eabf01fb78af6d7078638173ea\n243330a17d3d06a4249ed1420092268b00e3d61d" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+        echo -e "\n89373736705d1fc32a77a70400f280053f292d40\nd56f5187479451eabf01fb78af6d7078638173ea\n243330a17d3d06a4249ed1420092268b00e3d61d" > $ANDROID_HOME/licenses/android-sdk-license
+
+        # 4. Запускаем компиляцию APK
         buildozer -v android debug
 
     - name: Upload APK
