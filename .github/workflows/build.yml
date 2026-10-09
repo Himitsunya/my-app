@@ -31,28 +31,28 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # 1. Подготовка лицензий и путей SDK
+        # 1. Лицензии и симлинк для sdkmanager
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         mkdir -p $ANDROID_HOME/tools/bin
         ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
-        # 2. Инициализация и конфигурирование spec-файла
+        # 2. Инициализация spec-файла
         buildozer init
-        
-        # Настройка зависимостей: KivyMD подтянет все графические зависимости сам
-        sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd/g' buildozer.spec
-        
-        # Разрешения и пути SDK/NDK
-        sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
-        sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
-        sed -i 's/#android.sdk_path =/android.sdk_path = \/usr\/local\/lib\/android\/sdk/g' buildozer.spec
-        sed -i 's/#android.ndk = 25b/android.ndk = 25b/g' buildozer.spec
-        
-        # Архитектура arm64-v8a
-        sed -i 's/android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/g' buildozer.spec
-        sed -i 's/#android.archs = arm64-v8a/android.archs = arm64-v8a/g' buildozer.spec
 
-        # 3. Компиляция приложения
+        # 3. Точечное переписывание конфигурации
+        sed -i 's/^requirements =.*/requirements = python3,kivy,kivymd/g' buildozer.spec
+        sed -i 's/.*android.accept_sdk_license =.*/android.accept_sdk_license = True/g' buildozer.spec
+        sed -i 's/.*android.sdk_path =.*/android.sdk_path = \/usr\/local\/lib\/android\/sdk/g' buildozer.spec
+        
+        # Принудительно задаем NDK 25b (удаляем старую строку и добавляем новую)
+        sed -i '/android.ndk =/d' buildozer.spec
+        echo "android.ndk = 25b" >> buildozer.spec
+
+        # Принудительно задаем архитектуру arm64-v8a
+        sed -i '/android.archs =/d' buildozer.spec
+        echo "android.archs = arm64-v8a" >> buildozer.spec
+
+        # 4. Компиляция
         buildozer -v android debug
 
     - name: Upload APK
