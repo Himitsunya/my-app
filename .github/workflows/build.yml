@@ -26,15 +26,10 @@ jobs:
     - name: Build with Buildozer
       run: |
         buildozer init
+        # Добавляем зависимости KivyMD и авто-принятие лицензий SDK
         sed -i 's/requirements = python3,kivy/requirements = python3,kivy,kivymd,pillow/g' buildozer.spec
-        
-        # Скачивание SDK и автоматическое принятие лицензий
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-        curl -s https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline.zip
-        unzip -q cmdline.zip -d /tmp/cmdline
-        mv /tmp/cmdline/cmdline-tools/* ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/ 2>/dev/null || true
-        
-        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+        sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
+        sed -i 's/android.accept_sdk_license = False/android.accept_sdk_license = True/g' buildozer.spec
         
         buildozer -v android debug
 
