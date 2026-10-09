@@ -31,16 +31,18 @@ jobs:
 
     - name: Build with Buildozer
       run: |
-        # 1. Принятие лицензий и создание симлинков
+        # 1. Принятие лицензий системного SDK
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-        mkdir -p $ANDROID_HOME/tools/bin
-        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
-        # 2. Предварительное создание структуры buildozer и прокидывание лицензий
+        # 2. Подготовка локального SDK для Buildozer (создаем структуру, симлинки и лицензии)
+        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
         mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+        
+        # Связываем sdkmanager с местом, где его ищет Buildozer
+        ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
         cp -r $ANDROID_HOME/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ || true
 
-        # 3. Чистый конфиг buildozer.spec
+        # 3. Чистая генерация buildozer.spec с верными ключами параметров
         cat << 'EOF' > buildozer.spec
         [app]
         title = My App
@@ -58,15 +60,15 @@ jobs:
         log_level = 2
         warn_on_root = 1
 
-        # Настройки Android
+        # Настройки Android (указываем ndk_version для корректной фиксации NDK)
         android.accept_sdk_license = True
-        android.ndk = 25b
+        android.ndk_version = 25b
         android.api = 33
         android.minapi = 24
         android.archs = arm64-v8a
         EOF
 
-        # 4. Запуск сборки
+        # 4. Запуск компиляции
         buildozer -v android debug
 
     - name: Upload APK
@@ -74,3 +76,4 @@ jobs:
       with:
         name: app-release
         path: bin/*.apk
+        
