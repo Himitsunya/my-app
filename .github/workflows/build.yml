@@ -8,54 +8,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/kivy/buildozer:latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
+    - name: Build APK with Buildozer
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev gzip tar curl git ccache zip unzip liblldb-dev libjpeg-dev zlib1g-dev libpng-dev
-        pip install --upgrade pip setuptools buildozer cython
-
-    - name: Build with Buildozer
-      env:
-        ANDROIDSDK: /usr/local/lib/android/sdk
-        ANDROID_HOME: /usr/local/lib/android/sdk
-        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      run: |
-        # 1. Лицензии
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-        # 2. Создаем структуру локального SDK для Buildozer с симлинками на системный SDK
-        mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-
-        # Прокидываем sdkmanager во все возможные места
-        ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-        ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager
-        cp -r $ANDROID_HOME/licenses/* ~/.buildozer/android/platform/android-sdk/licenses/ || true
-
-        # 3. Устанавливаем NDK r25b напрямую через sdkmanager, чтобы исключить скачивание r28c
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.2.9519653" "build-tools;33.0.2" "platforms;android-33" || true
-
-        # Симлинк для NDK r25b
-        mkdir -p ~/.buildozer/android/platform
-        ln -sf $ANDROID_HOME/ndk/25.2.9519653 ~/.buildozer/android/platform/android-ndk-r25b
-
-        # 4. Чистый buildozer.spec
+        # 1. Формируем чистый файл конфигурации
         cat << 'EOF' > buildozer.spec
         [app]
         title = My App
@@ -73,18 +34,13 @@ jobs:
         log_level = 2
         warn_on_root = 1
 
-        # Настройки Android
         android.accept_sdk_license = True
-        android.sdk_path = /usr/local/lib/android/sdk
-        android.ndk_path = /usr/local/lib/android/sdk/ndk/25.2.9519653
-        android.ndk = 25b
         android.api = 33
         android.minapi = 24
         android.archs = arm64-v8a
-        android.skip_update = False
         EOF
 
-        # 5. Сборка
+        # 2. Запуск компиляции внутри изолированного окружения Kivy
         buildozer -v android debug
 
     - name: Upload APK
